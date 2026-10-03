@@ -2,7 +2,7 @@
   "name": "The Pocket",
   "short_name": "The Pocket",
   "description": "Metronome, 28-day practice schedule and practice rules for a 12-inch practice pad. Works offline.",
-  "id": "./",
+  "id": "/the-pocket/?app=2",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
