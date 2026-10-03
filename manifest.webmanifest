@@ -1,0 +1,18 @@
+{
+  "name": "The Pocket",
+  "short_name": "The Pocket",
+  "description": "Metronome, 28-day practice schedule and practice rules for a 12-inch practice pad. Works offline.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#241a13",
+  "theme_color": "#241a13",
+  "categories": ["music", "education"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

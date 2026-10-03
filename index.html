@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>The Pocket</title>
+<meta name="description" content="Metronome, 28-day schedule and practice rules for a 12-inch practice pad.">
+<meta name="theme-color" content="#241a13">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="The Pocket">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="app">
+  <header class="top">
+    <h1 class="brand">The Pocket</h1>
+    <p class="tagline">12-inch pad. Steady hands.</p>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <!-- 1. METRONOME -->
+    <section id="panel-metronome" class="panel" role="tabpanel" aria-labelledby="tab-metronome">
+      <div class="padwrap">
+        <svg class="pad" viewBox="-30 -30 360 360" aria-hidden="true" focusable="false">
+          <defs>
+            <radialGradient id="headg" cx="50%" cy="42%" r="65%">
+              <stop offset="0" stop-color="#2a221b"/><stop offset="1" stop-color="#171310"/>
+            </radialGradient>
+          </defs>
+          <polygon id="ring-sub" class="ring" points=""/>
+          <polygon id="ring-beat" class="ring" points=""/>
+          <polygon id="pad-rim" points=""/>
+          <polygon id="pad-head" points=""/>
+          <polygon id="pad-grain1" class="grain" points=""/>
+          <polygon id="pad-grain2" class="grain" points=""/>
+          <polygon id="pad-inner" points=""/>
+          <polygon id="pad-flash" points=""/>
+          <g id="pad-lugs"></g>
+        </svg>
+        <div class="bpmbox">
+          <output id="bpm" class="bpm" aria-live="off">100</output>
+          <span class="bpmlab">BPM</span>
+        </div>
+      </div>
+      <div class="beats" id="beats" aria-label="Beat position" role="img"><i></i><i></i><i></i><i></i></div>
+
+      <div class="controls leather">
+        <div class="bpmrow">
+          <button type="button" class="step" id="dec" aria-label="Decrease tempo">&minus;</button>
+          <input type="range" id="slider" min="40" max="220" step="1" value="100" aria-label="Tempo in beats per minute">
+          <button type="button" class="step" id="inc" aria-label="Increase tempo">+</button>
+        </div>
+        <div class="row2">
+          <button type="button" class="tap" id="tap">Tap tempo</button>
+          <div class="presets" id="presets" role="group" aria-label="Tempo presets"></div>
+        </div>
+        <div class="subdiv" id="subdiv" role="radiogroup" aria-label="Subdivision"></div>
+      </div>
+
+      <button type="button" class="go" id="go" aria-pressed="false">Start</button>
+      <p class="hint">Space starts and stops. Count the subdivision out loud.</p>
+    </section>
+
+    <!-- 2. SCHEDULE -->
+    <section id="panel-schedule" class="panel" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+      <h2 class="ptitle">28-Day Schedule</h2>
+      <div class="overall leather"><div class="overall-top"><span id="overall-text">0/28 days complete</span></div><div class="meter"><i id="overall-bar"></i></div></div>
+      <div id="weeks"></div>
+    </section>
+
+    <!-- 3. HOW TO PRACTICE -->
+    <section id="panel-rules" class="panel" role="tabpanel" aria-labelledby="tab-rules" hidden>
+      <h2 class="ptitle" id="rules-title">HOW TO PRACTICE</h2>
+      <ol class="rules" id="rules"></ol>
+    </section>
+  </main>
+
+  <div class="mini" id="mini" hidden>
+    <span><b id="mini-bpm">100</b> BPM running</span>
+    <button type="button" id="mini-stop">Stop</button>
+  </div>
+
+  <nav class="tabbar" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="tab-metronome" aria-controls="panel-metronome" data-tab="metronome">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>
+      <span>Metronome</span></button>
+    <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" data-tab="schedule">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14l2.5 2.5L16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>28-Day Plan</span></button>
+    <button type="button" role="tab" id="tab-rules" aria-controls="panel-rules" data-tab="rules">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>How to Practice</span></button>
+  </nav>
+</div>
+<noscript><p style="padding:2rem;color:#f2e8d5">The Pocket needs JavaScript. It runs fully in your browser, offline.</p></noscript>
+<script src="content.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
