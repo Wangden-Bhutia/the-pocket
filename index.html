@@ -6,6 +6,7 @@
 <title>The Pocket</title>
 <meta name="description" content="Metronome, 28-day schedule and practice rules for a 12-inch practice pad.">
 <meta name="theme-color" content="#241a13">
+<meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -18,89 +19,204 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="app">
+<div class="app" id="app">
   <header class="top">
     <h1 class="brand">The Pocket</h1>
     <p class="tagline">12-inch pad. Steady hands.</p>
   </header>
 
+  <button type="button" class="today" id="today" aria-haspopup="dialog">
+    <span class="today-day" id="today-day">Day 1</span>
+    <span class="today-tags" id="today-tags"></span>
+    <svg class="today-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
   <main id="main" tabindex="-1">
-    <!-- 1. METRONOME -->
-    <section id="panel-metronome" class="panel" role="tabpanel" aria-labelledby="tab-metronome">
-      <div class="padwrap">
-        <svg class="pad" viewBox="-30 -30 360 360" aria-hidden="true" focusable="false">
-          <defs>
-            <radialGradient id="headg" cx="50%" cy="42%" r="65%">
-              <stop offset="0" stop-color="#2a221b"/><stop offset="1" stop-color="#171310"/>
-            </radialGradient>
-          </defs>
-          <polygon id="ring-sub" class="ring" points=""/>
-          <polygon id="ring-beat" class="ring" points=""/>
-          <polygon id="pad-rim" points=""/>
-          <polygon id="pad-head" points=""/>
-          <polygon id="pad-grain1" class="grain" points=""/>
-          <polygon id="pad-grain2" class="grain" points=""/>
-          <polygon id="pad-inner" points=""/>
-          <polygon id="pad-flash" points=""/>
-          <g id="pad-lugs"></g>
-        </svg>
-        <div class="bpmbox">
-          <output id="bpm" class="bpm" aria-live="off">100</output>
-          <span class="bpmlab">BPM</span>
+    <!-- PRACTICE -->
+    <section id="panel-metronome" class="panel practice" role="tabpanel" aria-labelledby="tab-metronome">
+      <h2 class="sr-only">Practice</h2>
+      <div class="stage">
+        <div class="padwrap">
+          <div class="padbox">
+            <svg class="pad" viewBox="-30 -30 360 360" aria-hidden="true" focusable="false">
+              <defs>
+                <radialGradient id="headg" cx="50%" cy="42%" r="65%">
+                  <stop offset="0" stop-color="#2a221b"/><stop offset="1" stop-color="#171310"/>
+                </radialGradient>
+              </defs>
+              <polygon id="ring-sub" class="ring" points=""/>
+              <polygon id="ring-beat" class="ring" points=""/>
+              <polygon id="pad-rim" points=""/>
+              <polygon id="pad-head" points=""/>
+              <polygon id="pad-grain1" class="grain" points=""/>
+              <polygon id="pad-grain2" class="grain" points=""/>
+              <polygon id="pad-inner" points=""/>
+              <polygon id="pad-flash" points=""/>
+              <g id="pad-lugs"></g>
+            </svg>
+            <div class="bpmbox">
+              <span class="bpm" id="bpm">100</span>
+              <span class="bpmlab">BPM</span>
+              <span class="silent" id="silent" hidden>Silent: hold the tempo <b id="silent-bar"></b></span>
+            </div>
+          </div>
         </div>
+        <div class="beats" id="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <button type="button" class="go" id="go"><svg class="go-ic" viewBox="0 0 24 24" aria-hidden="true"><path class="ic-play" d="M8 5.5v13l10.5-6.5z" fill="currentColor"/><rect class="ic-stop" x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg><span id="go-label">Start</span></button>
       </div>
-      <div class="beats" id="beats" aria-label="Beat position" role="img"><i></i><i></i><i></i><i></i></div>
 
       <div class="controls leather">
         <div class="bpmrow">
           <button type="button" class="step" id="dec" aria-label="Decrease tempo">&minus;</button>
-          <input type="range" id="slider" min="40" max="220" step="1" value="100" aria-label="Tempo in beats per minute">
+          <input type="range" id="slider" min="40" max="220" step="1" value="100" aria-label="Tempo">
           <button type="button" class="step" id="inc" aria-label="Increase tempo">+</button>
         </div>
-        <div class="row2">
-          <button type="button" class="tap" id="tap">Tap tempo</button>
-          <div class="presets" id="presets" role="group" aria-label="Tempo presets"></div>
+        <div class="row2" role="group" aria-label="Tap tempo and presets">
+          <button type="button" class="tap" id="tap">Tap</button>
+          <div class="presets" id="presets"></div>
         </div>
         <div class="subdiv" id="subdiv" role="radiogroup" aria-label="Subdivision"></div>
+        <button type="button" class="ctbtn" id="ct-open" aria-haspopup="dialog">Clock training: <span id="ct-mode">Off</span></button>
       </div>
-
-      <button type="button" class="go" id="go" aria-pressed="false">Start</button>
-      <p class="hint">Space starts and stops. Count the subdivision out loud.</p>
     </section>
 
-    <!-- 2. SCHEDULE -->
+    <!-- PLAN -->
     <section id="panel-schedule" class="panel" role="tabpanel" aria-labelledby="tab-schedule" hidden>
-      <h2 class="ptitle">28-Day Schedule</h2>
+      <h2 class="ptitle">28-Day Plan</h2>
+      <div class="card leather baseline">
+        <h3 class="cardh">Recordings</h3>
+        <label class="check"><input type="checkbox" id="base-before"><span class="box" aria-hidden="true"></span><span>Baseline recording (before Day 1): one song with click, one without <span class="stamp" id="base-before-date"></span></span></label>
+        <label class="check"><input type="checkbox" id="base-final"><span class="box" aria-hidden="true"></span><span>Final recording (Day 28): same two songs <span class="stamp" id="base-final-date"></span></span></label>
+        <p class="help">Record the same two songs again on Day 28 and compare.</p>
+      </div>
       <div class="overall leather"><div class="overall-top"><span id="overall-text">0/28 days complete</span></div><div class="meter"><i id="overall-bar"></i></div></div>
       <div id="weeks"></div>
     </section>
 
-    <!-- 3. HOW TO PRACTICE -->
+    <!-- GUIDE -->
     <section id="panel-rules" class="panel" role="tabpanel" aria-labelledby="tab-rules" hidden>
-      <h2 class="ptitle" id="rules-title">HOW TO PRACTICE</h2>
+      <h2 class="ptitle" id="rules-title">HOW TO PRACTISE</h2>
       <ol class="rules" id="rules"></ol>
+
+      <h2 class="ptitle">Sound</h2>
+      <div class="card leather">
+        <div class="field">
+          <label for="vol">Volume <output id="vol-out" for="vol">80%</output></label>
+          <input type="range" id="vol" min="0" max="100" step="5" value="80">
+        </div>
+        <div class="field">
+          <span class="flab" id="sound-lab">Click sound</span>
+          <div class="seg3" id="sound" role="radiogroup" aria-labelledby="sound-lab"></div>
+        </div>
+      </div>
+
+      <h2 class="ptitle">Settings</h2>
+      <div class="card leather settings">
+        <button type="button" class="btn2" id="export">Export progress</button>
+        <button type="button" class="btn2" id="import">Import progress</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+        <button type="button" class="btn2 danger" id="reset">Reset progress</button>
+        <p class="help" id="settings-msg" role="status"></p>
+      </div>
     </section>
   </main>
 
-  <div class="mini" id="mini" hidden>
-    <span><b id="mini-bpm">100</b> BPM running</span>
-    <button type="button" id="mini-stop">Stop</button>
-  </div>
+  <section class="mini" id="mini" aria-label="Mini player" hidden>
+    <button type="button" class="mstep" id="mini-dec" aria-label="Decrease tempo">&minus;</button>
+    <span class="mini-bpm"><b id="mini-bpm">100</b> BPM</span>
+    <button type="button" class="mstep" id="mini-inc" aria-label="Increase tempo">+</button>
+    <button type="button" class="mini-go" id="mini-go">Start</button>
+  </section>
 
-  <nav class="tabbar" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tab-metronome" aria-controls="panel-metronome" data-tab="metronome">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>
-      <span>Metronome</span></button>
-    <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" data-tab="schedule">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14l2.5 2.5L16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>28-Day Plan</span></button>
-    <button type="button" role="tab" id="tab-rules" aria-controls="panel-rules" data-tab="rules">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>How to Practice</span></button>
+  <nav class="tabbar" aria-label="Sections">
+    <div role="tablist" class="tablist" aria-label="Sections">
+      <button type="button" role="tab" id="tab-metronome" aria-controls="panel-metronome" data-tab="metronome">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>
+        <span>Practice</span></button>
+      <button type="button" role="tab" id="tab-schedule" aria-controls="panel-schedule" data-tab="schedule">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14l2.5 2.5L16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Plan</span></button>
+      <button type="button" role="tab" id="tab-rules" aria-controls="panel-rules" data-tab="rules">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Guide</span></button>
+    </div>
   </nav>
+
+  <div class="notice" id="hint" hidden>
+    <p>Start with Day 1. On iPhone, turn the silent switch off.</p>
+    <button type="button" class="x" id="hint-x" aria-label="Dismiss hint">&times;</button>
+  </div>
+  <div class="notice warn" id="banner" role="status" hidden>
+    <p>Audio was interrupted. Tap Start to resume.</p>
+    <button type="button" class="x" id="banner-x" aria-label="Dismiss message">&times;</button>
+  </div>
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <div class="sr-only" id="live" aria-live="polite"></div>
 </div>
+
+<!-- SHEETS (outside .app so the app can be made inert while one is open) -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="sheet" id="sheet-today" role="dialog" aria-modal="true" aria-labelledby="td-title" hidden>
+  <div class="sheet-head"><h2 id="td-title">Day 1</h2><button type="button" class="x" data-close aria-label="Close">&times;</button></div>
+  <div class="sheet-body">
+    <p class="td-week" id="td-week"></p>
+    <p class="td-text" id="td-text"></p>
+    <div class="tags" id="td-tags"></div>
+    <details class="struct" id="td-struct"><summary id="td-struct-h"></summary><div id="td-struct-list"></div></details>
+    <div class="timer card" id="timer">
+      <h3 class="cardh">Session timer</h3>
+      <div class="tm-seg" id="tm-seg"></div>
+      <div class="tm-time" id="tm-time" role="timer" aria-live="off">20:00</div>
+      <div class="tm-len">
+        <button type="button" class="mstep" id="tm-dec" aria-label="Shorter session">&minus;</button>
+        <span id="tm-len">20 min</span>
+        <button type="button" class="mstep" id="tm-inc" aria-label="Longer session">+</button>
+      </div>
+      <div class="tm-btns">
+        <button type="button" class="btn2" id="tm-go">Start timer</button>
+        <button type="button" class="btn2" id="tm-reset">Reset</button>
+      </div>
+    </div>
+    <button type="button" class="btn1" id="td-done">Mark day done</button>
+    <p class="td-complete" id="td-complete" hidden>All 28 days are checked. To keep building your clock, repeat the plan from Day 1.</p>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-ct" role="dialog" aria-modal="true" aria-labelledby="ct-title" hidden>
+  <div class="sheet-head"><h2 id="ct-title">Clock training</h2><button type="button" class="x" data-close aria-label="Close">&times;</button></div>
+  <div class="sheet-body">
+    <div class="modes" id="modes" role="radiogroup" aria-label="Mode"></div>
+    <div class="mopts" id="opt-silent">
+      <div class="numrow"><span id="on-lab">Bars with click</span><button type="button" class="mstep" id="on-dec" aria-label="Fewer bars with click">&minus;</button><b id="on-val" aria-labelledby="on-lab">2</b><button type="button" class="mstep" id="on-inc" aria-label="More bars with click">+</button></div>
+      <div class="numrow"><span id="off-lab">Silent bars</span><button type="button" class="mstep" id="off-dec" aria-label="Fewer silent bars">&minus;</button><b id="off-val">2</b><button type="button" class="mstep" id="off-inc" aria-label="More silent bars">+</button></div>
+    </div>
+    <div class="mopts" id="opt-random">
+      <div class="numrow"><span>Chance a bar is silent</span><button type="button" class="mstep" id="ch-dec" aria-label="Lower chance">&minus;</button><b id="ch-val">25%</b><button type="button" class="mstep" id="ch-inc" aria-label="Higher chance">+</button></div>
+    </div>
+    <label class="check"><input type="checkbox" id="keepvis"><span class="box" aria-hidden="true"></span><span>Keep visuals during silence</span></label>
+    <p class="help">Every mode starts with one bar of click to count you in.</p>
+
+    <h3 class="cardh">Clock test</h3>
+    <p class="help">Tap along for 16 beats with the click, then 16 beats without it. You get the spread of your taps and how far your tempo drifted.</p>
+    <button type="button" class="btn1" id="test-go">Start clock test</button>
+    <button type="button" class="tapzone" id="tapzone" hidden><span>TAP</span><small id="test-status"></small></button>
+    <div class="result card" id="test-result" hidden></div>
+    <div id="hist"></div>
+  </div>
+</div>
+
+<div class="sheet dialog" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" aria-describedby="dlg-body" hidden>
+  <div class="sheet-head"><h2 id="dlg-title">Confirm</h2></div>
+  <div class="sheet-body">
+    <div id="dlg-body"></div>
+    <div class="tm-btns"><button type="button" class="btn2" id="dlg-no">Cancel</button><button type="button" class="btn1" id="dlg-yes">OK</button></div>
+  </div>
+</div>
+
 <noscript><p style="padding:2rem;color:#f2e8d5">The Pocket needs JavaScript. It runs fully in your browser, offline.</p></noscript>
 <script src="content.js"></script>
+<script src="plan-data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
