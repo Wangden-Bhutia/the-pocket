@@ -32,7 +32,7 @@ window.POCKET_CONTENT = {
       structureOrdered: false,
       structure: [
         "Learn 3 patterns on the pad, right hand = steady pulse, left hand = accents: a basic rock beat, a shuffle, a simple funk pattern.",
-        "Practice each pattern at three tempos in the same session: 70 BPM, 100 BPM, 130 BPM. The groove should feel identical at all three speeds. Move up only when the slower tempo is clean (2 minutes with no audible drift).",
+        "Practise each pattern at three tempos in the same session: 70 BPM, 100 BPM, 130 BPM. The groove should feel identical at all three speeds. Move up only when the slower tempo is clean (2 minutes with no audible drift).",
         "Last 5 minutes: pick up the guitar, strum basic chords while deliberately feeling the same subdivision just drilled on the pad."
       ],
       pacingHeading: "Day-by-day pacing:",
@@ -48,7 +48,7 @@ window.POCKET_CONTENT = {
     },
     {
       n: 3,
-      title: "WEEK 3 — INDEPENDENCE BASICS",
+      title: "WEEK 3 — VOICE & HANDS",
       subtitle: "(hardest jump — go slow)",
       structureHeading: "Daily structure:",
       structureOrdered: false,
@@ -92,10 +92,10 @@ window.POCKET_CONTENT = {
       ]
     }
   ],
-  rulesHeading: "HOW TO PRACTICE",
+  rulesHeading: "HOW TO PRACTISE",
   rules: [
     { h: "Count out loud", t: "Say the subdivision as you play it. Silent counting lets timing drift without you noticing." },
-    { h: "Always practice to the click", t: "Practice to the click — and on clock-training days, practise holding the tempo when the click drops out. Never practise with no reference at all." },
+    { h: "Always practise to the click", t: "Practise to the click — and on clock-training days, practise holding the tempo when the click drops out. Never practise with no reference at all." },
     { h: "Drop the tempo when it falls apart", t: "If a groove or subdivision breaks down, that's a sign the tempo is too fast, not a sign to push through. Drop 10–20 BPM, rebuild it clean, then work back up. Clean = 2 minutes with no audible drift: then raise 5 BPM." },
     { h: "Bridge every session to guitar or voice", t: "End each pad session by immediately picking up the guitar or singing over the same click, at the same tempo." },
     { h: "Short and daily beats long and occasional", t: "15–20 focused minutes every day builds the internal clock far faster than an hour once a week." }

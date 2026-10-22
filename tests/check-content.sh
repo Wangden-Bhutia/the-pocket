@@ -3,4 +3,4 @@
 # Any future text change needs explicit approval and a new hash here.
 set -e
 cd "$(dirname "$0")/.."
-echo "7078aa0f1bff11e16cbfaa4114a23e61b00981cb7f5e60ece2999ec4a5525490  content.js" | sha256sum -c -
+echo "09743f590a7a9c37259312c78f83d6577ff304e4582c8678d3c5a0c8a7973324  content.js" | sha256sum -c -
