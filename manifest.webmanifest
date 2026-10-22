@@ -6,7 +6,6 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#241a13",
   "theme_color": "#241a13",
   "categories": ["music", "education"],

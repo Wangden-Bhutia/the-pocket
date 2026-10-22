@@ -1,5 +1,5 @@
 /* The Pocket service worker. Asset list + version are generated: node tools/build-sw.js */
-const VERSION = 'pocket-79bc26da0f';
+const VERSION = 'pocket-d40fc4a8b6';
 const ASSETS = [
   "./",
   "app.js",
@@ -13,13 +13,19 @@ const ASSETS = [
   "icons/icon-maskable-512.png",
   "index.html",
   "manifest.webmanifest",
+  "plan-data.js",
   "style.css"
 ];
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache:'reload' bypasses the HTTP cache so a new version never precaches stale files.
+  e.waitUntil(caches.open(VERSION)
+    .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('pocket-') && k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys()
+    .then(ks => Promise.all(ks.filter(k => k.startsWith('pocket-') && k !== VERSION).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
   const req = e.request;
