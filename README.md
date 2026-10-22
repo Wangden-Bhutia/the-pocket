@@ -10,7 +10,7 @@ Live: https://wangden-bhutia.github.io/the-pocket/
 
 ## Files
 - `index.html`, `style.css`, `app.js` – the app (classic scripts, so `file://` works).
-- `content.js` – verbatim schedule/rules text. **Never edit.**
+- `content.js` – verbatim schedule/rules text. **Never edit without explicit approval** (hash in tests/check-content.sh).
 - `plan-data.js` – structured tempo/subdivision/timer data per day, taken only from what the text states.
   Entries under `suggest` are editorial and are shown with a dashed outline and the word "suggested".
 - `manifest.webmanifest`, `sw.js` (generated precache), `tools/build-sw.js`, `fonts/`, `icons/`.
@@ -34,7 +34,7 @@ CI (`.github/workflows/sw-check.yml`) reruns the script and fails if `sw.js` wou
 
 ## Running the checks
 ```sh
-./tests/check-content.sh                                   # content.js byte-identical to the original
+./tests/check-content.sh                                   # content.js matches the approved text (sha256)
 mkdir -p ../pocket-tools && (cd ../pocket-tools && npm i playwright-core axe-core)   # dev-only, outside the repo
 NODE_PATH=../pocket-tools/node_modules node tests/e2e.js   # needs Google Chrome and the server above
 ```

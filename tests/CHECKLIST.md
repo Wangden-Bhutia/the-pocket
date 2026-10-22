@@ -16,7 +16,7 @@ Automated = `node tests/e2e.js` (see README). Manual = needs a real phone/ears.
 | 10 | Today strip = first unchecked day; tags set tempo in place; timer accurate over 5 min | `currentDay()`; toast; timer uses `Date.now()` deltas | Automated (faked clock 5:00) |
 | 11 | Silent bars 2/2: count-in, 2 audible, 2 silent with visuals hidden, repeating | `barIsSilent()` per bar | Automated (schedule + UI) ; audible: Manual |
 | 12 | Clock test gives SD + drift % for both phases, stores history, no absolute offset | `phaseStats()` on tap intervals | Automated (synthetic taps); real taps: Manual |
-| 13 | content.js byte-identical | | `tests/check-content.sh` |
+| 13 | content.js matches the approved text | sha256 baseline | `tests/check-content.sh` |
 | 14 | Works from file:// | Classic scripts; SW registration skipped off http(s) | Automated |
 
 ## Manual (phone on a stand)

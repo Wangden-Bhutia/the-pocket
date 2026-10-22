@@ -4,7 +4,7 @@ window.POCKET_CONTENT = {
     {
       n: 1,
       title: "WEEK 1 — SUBDIVISION FOUNDATIONS",
-      subtitle: "(hands only, no feet/pedal)",
+      subtitle: "(hands only)",
       structureHeading: "Daily structure every day this week (15–20 min):",
       structureOrdered: true,
       structure: [
@@ -27,12 +27,12 @@ window.POCKET_CONTENT = {
     {
       n: 2,
       title: "WEEK 2 — GROOVES + TEMPO RANGE",
-      subtitle: "(still no feet/pedal — right/left hand roles only)",
+      subtitle: "(right/left hand roles only)",
       structureHeading: "Daily structure:",
       structureOrdered: false,
       structure: [
-        "Learn 3 patterns on the pad, right hand = hi-hat pulse role (steady), left hand = snare hits (accented): a basic rock beat, a shuffle, a simple funk pattern.",
-        "Practice each pattern at three tempos in the same session: 70 BPM, 100 BPM, 130 BPM. The groove should feel identical at all three speeds.",
+        "Learn 3 patterns on the pad, right hand = steady pulse, left hand = accents: a basic rock beat, a shuffle, a simple funk pattern.",
+        "Practice each pattern at three tempos in the same session: 70 BPM, 100 BPM, 130 BPM. The groove should feel identical at all three speeds. Move up only when the slower tempo is clean (2 minutes with no audible drift).",
         "Last 5 minutes: pick up the guitar, strum basic chords while deliberately feeling the same subdivision just drilled on the pad."
       ],
       pacingHeading: "Day-by-day pacing:",
@@ -53,19 +53,19 @@ window.POCKET_CONTENT = {
       structureHeading: "Daily structure:",
       structureOrdered: false,
       structure: [
-        "Add a foot tap (steady quarter notes) while hands play a Week 2 groove pattern. If no literal foot pedal, tap foot on the floor or use a kick-pedal-onto-pillow setup if available.",
-        "Drop tempo back to 70 BPM if the pattern falls apart when the foot is added.",
+        "Add a vocal pulse (say \"1, 2, 3, 4\" out loud on the quarter notes) while hands play a Week 2 groove pattern. Voice and hands must stay independent: the count never follows the accents.",
+        "Drop tempo back to 70 BPM if the pattern falls apart when the voice is added.",
         "10 min pad + 10 min guitar: play a known song while deliberately locking the strumming hand to a metronome."
       ],
       pacingHeading: "Day-by-day pacing:",
       days: [
-        "Foot taps steady quarters at 70 BPM alone, no hands yet — just get the foot locked to the click.",
-        "Add the right-hand pulse on top of the foot tap, still at 70 BPM. Just two limbs together.",
-        "Add the left-hand snare hits — full three-limb coordination (rock beat pattern) at 70 BPM.",
-        "Same three-limb coordination, try 85 BPM. Drop back to 70 if it breaks down.",
-        "Apply independence to the shuffle pattern, 70 BPM.",
-        "Guitar bridge day — 10 min pad (rock beat with foot), then 10 min guitar locking strumming hand to the same click.",
-        "Full review — all three Week 2 patterns with foot independence, at comfortable tempos. Note which pattern still feels shakiest."
+        "Count quarters out loud at 70 BPM alone, no hands yet — just get your voice locked to the click.",
+        "Add the right-hand pulse on top of the spoken count, still at 70 BPM. Just voice and one hand together.",
+        "Add the left-hand accents — full voice + two-hand coordination (rock beat pattern) at 70 BPM.",
+        "Same voice + two-hand coordination, try 85 BPM once 70 BPM is clean for 2 minutes. Drop back to 70 if it breaks down.",
+        "Apply the spoken count to the shuffle pattern, 70 BPM.",
+        "Guitar bridge day — 10 min pad (rock beat with spoken count), then 10 min guitar locking strumming hand to the same click while counting or humming the pulse.",
+        "Full review — all three Week 2 patterns with the spoken count, at comfortable tempos. Note which pattern still feels shakiest."
       ]
     },
     {
@@ -82,21 +82,21 @@ window.POCKET_CONTENT = {
       ],
       pacingHeading: "Day-by-day pacing:",
       days: [
-        "Identify the single weakest element from Weeks 1–3 (a subdivision, a pattern, or the independence coordination). Drill only that for 15 min.",
+        "Identify the single weakest element from Weeks 1–3 (a subdivision, a pattern, or the voice + hands coordination). Drill only that for 15 min.",
         "Continue drilling the weak element. Record one short guitar take to a click track for the first time.",
         "Listen back to Day 23's recording. Note specific moments of timing drift. Drill the weak element again.",
         "Record a vocal take to a click track. Compare to an old pre-click recording if one exists.",
         "Continue weak-element drilling. Attempt a guitar take deliberately playing slightly behind the beat (pocket feel).",
         "Full combined session — pad warm-up (all patterns briefly) then one complete guitar+vocal take to a click.",
-        "Review week — listen to Day 1 of this week vs Day 28 recordings side by side. Note the audible difference in timing consistency."
+        "Review week — listen to your baseline recording (before Day 1) and your Day 28 recordings side by side. Note the audible difference in timing consistency."
       ]
     }
   ],
   rulesHeading: "HOW TO PRACTICE",
   rules: [
     { h: "Count out loud", t: "Say the subdivision as you play it. Silent counting lets timing drift without you noticing." },
-    { h: "Always practice to the click", t: "Never practice without the metronome running, even when it feels like it's slowing you down." },
-    { h: "Drop the tempo when it falls apart", t: "If a groove or subdivision breaks down, that's a sign the tempo is too fast, not a sign to push through. Drop 10–20 BPM, rebuild it clean, then work back up." },
+    { h: "Always practice to the click", t: "Practice to the click — and on clock-training days, practise holding the tempo when the click drops out. Never practise with no reference at all." },
+    { h: "Drop the tempo when it falls apart", t: "If a groove or subdivision breaks down, that's a sign the tempo is too fast, not a sign to push through. Drop 10–20 BPM, rebuild it clean, then work back up. Clean = 2 minutes with no audible drift: then raise 5 BPM." },
     { h: "Bridge every session to guitar or voice", t: "End each pad session by immediately picking up the guitar or singing over the same click, at the same tempo." },
     { h: "Short and daily beats long and occasional", t: "15–20 focused minutes every day builds the internal clock far faster than an hour once a week." }
   ]

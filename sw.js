@@ -1,5 +1,5 @@
 /* The Pocket service worker. Asset list + version are generated: node tools/build-sw.js */
-const VERSION = 'pocket-d40fc4a8b6';
+const VERSION = 'pocket-8439432aaa';
 const ASSETS = [
   "./",
   "app.js",
