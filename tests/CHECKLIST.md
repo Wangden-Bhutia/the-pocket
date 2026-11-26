@@ -28,3 +28,11 @@ Automated = `node tests/e2e.js` (see README). Manual = needs a real phone/ears.
 - [ ] Clock test with real taps at 70 BPM gives sensible numbers.
 - [ ] Landscape on a real phone: Start and controls reachable; safe areas respected (notch).
 - [ ] Reduced motion on: no pulse ring on Stop, no pad scale animation.
+- [ ] Timing check, microphone, phone speaker (Android Chrome and iPhone): the count-in is measured (result says
+      "measured from the count-in click"); the delay looks plausible (roughly 50-300 ms); the click echo is not
+      counted as hits when you stay silent for a whole run (result: "Heard only 0 hits").
+- [ ] Timing check, stick on the pad at 80 BPM, deliberately on the click: mostly "in the pocket"; deliberately
+      a little early for a run: the result reports rushing. Repeat with claps.
+- [ ] Sensitivity 1-5: low setting ignores speech/room noise; high setting still catches soft strokes.
+- [ ] Timing check with wired headphones: "did not hear the count-in"; after playing-along calibration, runs work.
+- [ ] Closing the timing sheet turns the microphone indicator off.

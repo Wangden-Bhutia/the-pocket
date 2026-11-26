@@ -76,7 +76,10 @@
           <div class="presets" id="presets"></div>
         </div>
         <div class="subdiv" id="subdiv" role="radiogroup" aria-label="Subdivision"></div>
-        <button type="button" class="ctbtn" id="ct-open" aria-haspopup="dialog">Clock training: <span id="ct-mode">Off</span></button>
+        <div class="ctrow">
+          <button type="button" class="ctbtn" id="ct-open" aria-haspopup="dialog">Clock: <span id="ct-mode">Off</span></button>
+          <button type="button" class="ctbtn" id="tc-open" aria-haspopup="dialog">Timing check</button>
+        </div>
       </div>
     </section>
 
@@ -203,6 +206,28 @@
     <button type="button" class="tapzone" id="tapzone" hidden><span>TAP</span><small id="test-status"></small></button>
     <div class="result card" id="test-result" hidden></div>
     <div id="hist"></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-tc" role="dialog" aria-modal="true" aria-labelledby="tc-title" hidden>
+  <div class="sheet-head"><h2 id="tc-title">Timing check</h2><button type="button" class="x" data-close aria-label="Close">&times;</button></div>
+  <div class="sheet-body">
+    <p class="help">After a one-bar count-in, play 16 quarter notes with the click at the current tempo. Each hit is graded: in the pocket (within 25 ms), close (within 50 ms), early or late.</p>
+    <div class="field">
+      <span class="flab" id="tc-input-lab">Listen to</span>
+      <div class="seg2" id="tc-input" role="radiogroup" aria-labelledby="tc-input-lab"></div>
+    </div>
+    <div class="mopts" id="tc-mic-opts">
+      <p class="help">Use the phone speaker, not headphones, and keep the phone close to the pad. Stay quiet during the count-in: the app listens to its own click then to measure the phone's delay.</p>
+      <div class="numrow"><span id="tc-sens-lab">Sensitivity</span><button type="button" class="mstep" id="tc-sens-dec" aria-label="Lower sensitivity">&minus;</button><b id="tc-sens-val">3</b><button type="button" class="mstep" id="tc-sens-inc" aria-label="Higher sensitivity">+</button></div>
+    </div>
+    <p class="help" id="tc-cal-line"></p>
+    <button type="button" class="btn1" id="tc-go">Start timing check</button>
+    <button type="button" class="btn2 tc-cal" id="tc-cal">Calibrate by playing along</button>
+    <p class="tc-status" id="tc-status" aria-live="off"></p>
+    <button type="button" class="tapzone" id="tc-tap" hidden><span>TAP</span></button>
+    <div class="result card" id="tc-result" hidden></div>
+    <div id="tc-hist"></div>
   </div>
 </div>
 

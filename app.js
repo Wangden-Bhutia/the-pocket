@@ -13,6 +13,9 @@
   var MODES = ['off', 'silent', 'beat1', 'backbeat', 'random'];
   var MODE_NAME = { off: 'Off', silent: 'Silent bars', beat1: 'Beat 1 only', backbeat: 'Backbeat', random: 'Random' };
   var TEST = /[?&]test=1(&|$)/.test(location.search);
+  // Timing check: grading bands (ms) and the two score lines (EarMaster-style pass / recommend).
+  var TC_BEATS = 16, TC_ON = 25, TC_CLOSE = 50, TC_READY = 85, TC_HOLD = 60;
+  var TC_INPUTS = ['mic', 'tap'], TC_INPUT_NAME = { mic: 'Microphone', tap: 'Screen taps' };
   var $ = function (s, el) { return (el || document).querySelector(s); };
   var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -29,7 +32,8 @@
   function defaults() {
     return { v: 2, bpm: 100, subdiv: 1, tab: 'metronome', done: {}, open: {}, vol: 80, sound: 'wood',
       mode: { type: 'off', on: 2, off: 2, chance: 25, keepVis: false },
-      base: { before: '', final: '' }, hist: [], hintSeen: false };
+      base: { before: '', final: '' }, hist: [], hintSeen: false,
+      tc: { input: 'mic', sens: 3, cal: { mic: null, tap: null }, hist: [] } };
   }
   function dayMap(o) { var r = {}; if (!isObj(o)) return r; for (var d = 1; d <= 28; d++) if (o[d] === true) r[d] = true; return r; }
   function weekMap(o) { var r = {}; if (!isObj(o)) return r; for (var w = 1; w <= 4; w++) if (o[w] === true) r[w] = true; return r; }
@@ -60,6 +64,20 @@
       }).slice(-50).map(function (h) { return { d: h.d, bpm: h.bpm, sdC: h.sdC, sdS: h.sdS, drift: h.drift }; });
     }
     if (typeof o.hintSeen === 'boolean') s.hintSeen = o.hintSeen;
+    if (isObj(o.tc)) {
+      var q = o.tc;
+      if (TC_INPUTS.indexOf(q.input) >= 0) s.tc.input = q.input;
+      if (intIn(q.sens, 1, 5)) s.tc.sens = Math.round(q.sens);
+      if (isObj(q.cal)) TC_INPUTS.forEach(function (k) {
+        var c = q.cal[k];
+        if (isObj(c) && intIn(c.ms, -100, 1000) && isoOrEmpty(c.d)) s.tc.cal[k] = { ms: Math.round(c.ms), d: c.d };
+      });
+      if (Array.isArray(q.hist)) {
+        s.tc.hist = q.hist.filter(function (h) {
+          return isObj(h) && isoOrEmpty(h.d) && intIn(h.bpm, MIN_BPM, MAX_BPM) && TC_INPUTS.indexOf(h.in) >= 0 && intIn(h.sc, 0, 100) && intIn(h.mean, -300, 300) && intIn(h.sd, 0, 500);
+        }).slice(-50).map(function (h) { return { d: h.d, bpm: h.bpm, in: h.in, sc: h.sc, mean: h.mean, sd: h.sd }; });
+      }
+    }
     return s;
   }
   function readJSON(k) { try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
@@ -276,11 +294,13 @@
   var running = false, timer = null, rafId = 0, nextTime = 0, beatIdx = 0, subIdx = 0, barIdx = 0, curSub = 1, pendingSub = 0;
   var barSilent = false, queue = [], LOG = [], stats = { scheduled: 0, dropped: 0, stalls: 0, pulses: 0 };
   var test = null; // clock test session, see section D
+  var tc = null;   // timing check session, see section E
 
   function stepDur() { return 60 / S.bpm / curSub; }
   // Called at the start of each bar to decide whether the bar is muted (pattern modes only).
   function barIsSilent(bar) {
     if (test) return bar >= 5;            // test: count-in (0), bars 1-4 with click, bars 5-8 silent
+    if (tc) return false;                 // timing check: every bar clicks
     var m = S.mode;
     if (bar === 0) return false;          // count-in is always audible
     if (m.type === 'silent') return ((bar - 1) % (m.on + m.off)) >= m.on;
@@ -289,7 +309,7 @@
   }
   function noteAudible(beat, sub) {
     if (barSilent) return false;
-    if (test) return sub === 0;           // test clicks on beats only
+    if (test || tc) return sub === 0;     // test / timing check click on beats only
     if (barIdx === 0) return true;
     var t = S.mode.type;
     if (t === 'beat1') return beat === 0 && sub === 0;
@@ -302,6 +322,7 @@
     if (aud) click(nextTime, level);
     queue.push({ time: nextTime, beat: beatIdx, sub: subIdx, level: level, aud: aud, silent: barSilent, bar: barIdx });
     stats.scheduled++;
+    if (tc && subIdx === 0) tc.beats.push({ t: nextTime, bar: barIdx, beat: beatIdx });
     if (TEST) { LOG.push({ t: nextTime, at: ctx.currentTime, beat: beatIdx, sub: subIdx, level: level, aud: aud, bar: barIdx, n: curSub, bpm: S.bpm }); if (LOG.length > 6000) LOG.shift(); }
   }
   function advance() {
@@ -311,7 +332,11 @@
       subIdx = 0; beatIdx = (beatIdx + 1) % BEATS;
       // A pending subdivision takes effect only here, on a beat boundary, so the old beat plays out at the old grid.
       if (pendingSub) { curSub = pendingSub; pendingSub = 0; }
-      if (beatIdx === 0) { barIdx++; barSilent = barIsSilent(barIdx); if (test && barIdx >= 9) test.endAt = nextTime; }
+      if (beatIdx === 0) {
+        barIdx++; barSilent = barIsSilent(barIdx);
+        if (test && barIdx >= 9) test.endAt = nextTime;
+        if (tc && barIdx >= tc.bars + 1) tc.endAt = nextTime;
+      }
     }
   }
   function scheduler() {
@@ -324,8 +349,10 @@
       for (var i = 0; i < k; i++) { advance(); stats.dropped++; }
       while (nextTime < now) { advance(); stats.dropped++; } // a pending subdivision may have changed the step
     }
-    while (nextTime < now + SCHEDULE_AHEAD && !(test && test.endAt)) { scheduleNote(); advance(); }
+    while (nextTime < now + SCHEDULE_AHEAD && !(test && test.endAt) && !(tc && tc.endAt)) { scheduleNote(); advance(); }
     if (test && test.endAt && now > test.endAt) { finishTest(); return; }
+    // Wait past the last beat so late hits and the microphone's own delay (up to ~0.4 s on Android) arrive.
+    if (tc && tc.endAt && now > tc.endAt + 0.45) { finishTc(); return; }
     timer = setTimeout(scheduler, LOOKAHEAD_MS);
   }
 
@@ -373,6 +400,7 @@
       if (now - n.time < 0.25) pulse(n); // skip stale pulses (e.g. after the tab was hidden)
     }
     if (test) updateTestStatus(now);
+    if (tc) updateTcStatus(now);
     rafId = requestAnimationFrame(draw);
   }
 
@@ -397,11 +425,12 @@
     if (!ensureAudio()) { showBanner('Web Audio is not available in this browser.'); return; }
     hideBanner();
     running = true; beatIdx = 0; subIdx = 0; barIdx = 0; queue = []; live = [];
-    curSub = test ? 1 : S.subdiv; pendingSub = 0; barSilent = false;
+    curSub = (test || tc) ? 1 : S.subdiv; pendingSub = 0; barSilent = false;
     var t0 = ctx.currentTime;
     bus.gain.cancelScheduledValues(t0); bus.gain.setValueAtTime(1, t0); // restore the gate after a Stop ramp
     nextTime = t0 + 0.08;
     if (test) test.t0 = nextTime;
+    if (tc) tc.t0 = nextTime;
     scheduler(); rafId = requestAnimationFrame(draw); lockScreen();
     renderGo();
   }
@@ -419,6 +448,7 @@
     segs.forEach(function (d) { d.classList.remove('on'); });
     setSilentUI(false, null); silentShown = false;
     if (test && !test.done) abortTest();
+    if (tc && !tc.done) abortTc();
     renderGo();
   }
   function toggle() { running ? stop() : start(); }
@@ -463,6 +493,7 @@
   }
   function closeSheet(keepFocus) {
     if (!openSheet) return;
+    if (openSheet.id === 'sheet-tc') tcClose();
     openSheet.hidden = true; $('#scrim').hidden = true; openSheet = null;
     $('#app').removeAttribute('aria-hidden'); $('#app').inert = false;
     if (!keepFocus && lastFocus && lastFocus.focus) lastFocus.focus();
@@ -751,7 +782,7 @@
   $('#reset').addEventListener('click', function () {
     var days = totalDone(), base = (S.base.before ? 1 : 0) + (S.base.final ? 1 : 0), wrap = el('div');
     wrap.appendChild(el('p', '', 'Choose what to clear. This cannot be undone.'));
-    var opts = [['r-days', 'Checked days (' + days + ' of 28 will be cleared)'], ['r-base', 'Recording checklist (' + base + ' checked)'], ['r-hist', 'Clock test history (' + S.hist.length + ' results)']];
+    var opts = [['r-days', 'Checked days (' + days + ' of 28 will be cleared)'], ['r-base', 'Recording checklist (' + base + ' checked)'], ['r-hist', 'Clock test history (' + S.hist.length + ' results)'], ['r-tc', 'Timing check history and calibration (' + S.tc.hist.length + ' results)']];
     opts.forEach(function (o) {
       var l = el('label', 'check'), c = document.createElement('input'); c.type = 'checkbox'; c.id = o[0]; c.checked = true;
       l.appendChild(c); var bx = el('span', 'box'); bx.setAttribute('aria-hidden', 'true'); l.appendChild(bx); l.appendChild(el('span', '', o[1])); wrap.appendChild(l);
@@ -761,6 +792,7 @@
       if ($('#r-days').checked) { S.done = {}; }
       if ($('#r-base').checked) S.base = { before: '', final: '' };
       if ($('#r-hist').checked) S.hist = [];
+      if ($('#r-tc').checked) { S.tc.hist = []; S.tc.cal = { mic: null, tap: null }; }
       writeNow(); applyAll(); $('#settings-msg').textContent = 'Progress reset.';
     });
   });
@@ -862,6 +894,280 @@
     host.appendChild(ul);
   }
 
+  /* ---------- E. timing check ----------
+     Grades each hit against the click: in the pocket (<= 25 ms), close (<= 50 ms), early / late, or missed.
+     Microphone: a ScriptProcessor feeds an onset detector. Hit times come from the audio clock
+     (playbackTime + sample index), so they carry a constant delay but no main-thread jitter.
+     That delay is measured on every run from the count-in: the mic hears the app's own click, which
+     gives output + input latency together. The echo's level then sets a gate, so later click echoes
+     are not counted as hits. Screen taps (or a mic with headphones) use a play-along calibration instead.
+     That treats the player's average as on time: steadiness is still measured, an overall rush/drag is not. */
+  var SENS_K = [8, 6, 4.5, 3.5, 2.5], SENS_ABS = [0.06, 0.04, 0.025, 0.015, 0.01];
+  // Onset detector: peak envelope over a slow noise floor; one onset per refractory window.
+  function makeDetector(sr) {
+    var rel = Math.exp(-1 / (sr * 0.012)), fl = 1 / (sr * 0.4);
+    var d = { env: 0, floor: 0.002, last: -9, pk: null, cfg: { k: 4.5, abs: 0.025, gate: 0, refr: 0.09 } };
+    d.process = function (buf, t0, cb) {
+      var c = d.cfg;
+      for (var i = 0; i < buf.length; i++) {
+        var x = buf[i] < 0 ? -buf[i] : buf[i], t = t0 + i / sr;
+        d.env = x > d.env ? x : d.env * rel;
+        if (d.pk) { // report the onset time with the peak reached in the next 12 ms
+          if (d.env > d.pk.v) d.pk.v = d.env;
+          if (t >= d.pk.until) { cb(d.pk.t, d.pk.v); d.pk = null; }
+          continue;
+        }
+        if (d.env > Math.max(d.floor * c.k, c.abs, c.gate) && t - d.last >= c.refr) { d.last = t; d.pk = { t: t, v: d.env, until: t + 0.012 }; }
+        else if (t - d.last > c.refr) { d.floor += (d.env - d.floor) * fl; if (d.floor < 0.0005) d.floor = 0.0005; }
+      }
+    };
+    return d;
+  }
+  function applySens(det) { det.cfg.k = SENS_K[S.tc.sens - 1]; det.cfg.abs = SENS_ABS[S.tc.sens - 1]; }
+  function median(a) {
+    var b = a.slice().sort(function (x, y) { return x - y; }), n = b.length;
+    return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : 0;
+  }
+  // beats and hits in seconds, hits already delay-corrected. Each beat takes the nearest unused hit within W.
+  function tcGrade(beats, hits, beatDur) {
+    var W = Math.min(0.25, 0.45 * beatDur), hs = hits.slice().sort(function (a, b) { return a - b; }), used = hs.map(function () { return false; });
+    var res = beats.map(function (b) {
+      var best = -1, bd = W;
+      for (var i = 0; i < hs.length; i++) if (!used[i] && Math.abs(hs[i] - b) <= bd) { best = i; bd = Math.abs(hs[i] - b); }
+      if (best < 0) return { err: null, cls: 'miss' };
+      used[best] = true;
+      var e = Math.round((hs[best] - b) * 1000), a = Math.abs(e);
+      return { err: e, cls: a <= TC_ON ? 'on' : a <= TC_CLOSE ? 'close' : e < 0 ? 'early' : 'late' };
+    });
+    var lo = beats[0] - W, hi = beats[beats.length - 1] + W, extra = 0;
+    hs.forEach(function (h, i) { if (!used[i] && h >= lo && h <= hi) extra++; });
+    var n = { on: 0, close: 0, early: 0, late: 0, miss: 0 };
+    res.forEach(function (r) { n[r.cls]++; });
+    var errs = res.filter(function (r) { return r.err !== null; }).map(function (r) { return r.err; });
+    var mean = errs.length ? errs.reduce(function (a, b) { return a + b; }, 0) / errs.length : 0;
+    var sd = errs.length > 1 ? Math.sqrt(errs.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / (errs.length - 1)) : 0;
+    return { res: res, n: n, extra: extra, matched: errs.length, mean: Math.round(mean), sd: Math.round(sd),
+      score: Math.round((n.on + 0.5 * n.close) / beats.length * 100) };
+  }
+
+  var mic = null; // { stream, src, node, sink, det }
+  function micOpen() {
+    return new Promise(function (res, rej) {
+      if (mic) { res(); return; }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { rej({ name: 'Unsupported' }); return; }
+      if (!ensureAudio()) { rej({ name: 'Unsupported' }); return; } // inside the tap, for iOS
+      // iOS: a 'playback' audio session (set in ensureAudio) can block capture while it is active.
+      if (navigator.audioSession) { try { navigator.audioSession.type = 'play-and-record'; } catch (e) {} }
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
+        var m = { stream: stream, det: makeDetector(ctx.sampleRate) };
+        m.src = ctx.createMediaStreamSource(stream);
+        m.node = ctx.createScriptProcessor(1024, 1, 1);
+        m.sink = ctx.createGain(); m.sink.gain.value = 0; // the node must reach the destination to run; this keeps it silent
+        m.node.onaudioprocess = function (e) {
+          var t0 = typeof e.playbackTime === 'number' ? e.playbackTime : ctx.currentTime;
+          m.det.process(e.inputBuffer.getChannelData(0), t0, onOnset);
+        };
+        m.src.connect(m.node); m.node.connect(m.sink); m.sink.connect(ctx.destination);
+        applySens(m.det); mic = m; res();
+      }, rej);
+    });
+  }
+  function micStop() {
+    if (!mic) return;
+    try { mic.node.onaudioprocess = null; mic.src.disconnect(); mic.node.disconnect(); mic.sink.disconnect(); } catch (e) {}
+    mic.stream.getTracks().forEach(function (t) { t.stop(); });
+    mic = null;
+    if (navigator.audioSession) { try { navigator.audioSession.type = 'playback'; } catch (e) {} }
+  }
+  function onOnset(t, v) {
+    if (!tc || tc.done || !running || tc.input !== 'mic') return;
+    tc.hits.push({ t: t, v: v });
+    if (tc.echo === null) findEcho();
+  }
+  // Count-in: the first onset 5-450 ms after each count-in click. 3+ that agree within 20 ms = the loopback delay.
+  function findEcho() {
+    var offs = [], peak = 0;
+    tc.beats.forEach(function (b) {
+      if (b.bar !== 0) return;
+      for (var i = 0; i < tc.hits.length; i++) {
+        var dt = tc.hits[i].t - b.t;
+        if (dt >= 0.005 && dt <= 0.45) { offs.push(dt); peak = Math.max(peak, tc.hits[i].v); break; }
+      }
+    });
+    if (offs.length < 3 || Math.max.apply(null, offs) - Math.min.apply(null, offs) > 0.02) return;
+    tc.echo = median(offs); tc.echoPeak = peak;
+    if (mic) mic.det.cfg.gate = peak * 1.8; // later click echoes stay under the gate; a pad hit near the phone clears it
+  }
+  function audioTimeOf(ms) {
+    var ts = ctx.getOutputTimestamp ? ctx.getOutputTimestamp() : null;
+    if (ts && ts.performanceTime > 0) return ts.contextTime + (ms - ts.performanceTime) / 1000;
+    return ctx.currentTime - (performance.now() - ms) / 1000;
+  }
+  function tcTap(ms) {
+    if (!tc || tc.done || !running || tc.input !== 'tap') return;
+    tc.hits.push({ t: audioTimeOf(ms), v: 1 });
+    var z = $('#tc-tap'); z.classList.add('hit'); setTimeout(function () { z.classList.remove('hit'); }, 80);
+  }
+  $('#tc-tap').addEventListener('pointerdown', function (e) { if (e.button > 0) return; e.preventDefault(); tcTap(e.timeStamp || performance.now()); });
+  $('#tc-tap').addEventListener('keydown', function (e) { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); tcTap(e.timeStamp || performance.now()); } else if (e.key === ' ' || e.key === 'Enter') e.preventDefault(); });
+  $('#tc-tap').addEventListener('click', function (e) { e.preventDefault(); });
+
+  function tcBegin(kind) {
+    if (tc) return;
+    stop();
+    var input = S.tc.input;
+    function go() {
+      if (!openSheet || openSheet.id !== 'sheet-tc') { micStop(); return; } // sheet closed while the mic prompt was up
+      tc = { kind: kind, input: input, bars: kind === 'cal' ? 2 : 4, t0: 0, beats: [], hits: [], echo: null, echoPeak: 0, endAt: 0, done: false };
+      if (mic) { applySens(mic.det); mic.det.cfg.gate = 0; }
+      $('#tc-result').hidden = true; $('#tc-tap').hidden = input !== 'tap'; $('#tc-cal').hidden = true;
+      $('#tc-go').textContent = 'Cancel'; tcLast = '';
+      start();
+      if (input === 'tap') $('#tc-tap').focus();
+    }
+    if (input !== 'mic') { go(); return; }
+    $('#tc-status').textContent = 'Opening the microphone…';
+    micOpen().then(go, function (e) {
+      $('#tc-status').textContent = '';
+      tcMessage(e && e.name === 'NotAllowedError' ? 'Microphone access was blocked. Allow it for this site in the browser settings, or switch to Screen taps.'
+        : 'The microphone is not available here (it needs the https site and a browser that allows it). Switch to Screen taps.');
+    });
+  }
+  function abortTc() { tc = null; tcResetUi(); }
+  function tcResetUi() {
+    $('#tc-tap').hidden = true; $('#tc-cal').hidden = false; $('#tc-status').textContent = '';
+    renderTc();
+  }
+  function tcClose() { if (tc) stop(); micStop(); }
+  function tcMessage(text) { var box = $('#tc-result'); box.innerHTML = ''; box.hidden = false; box.appendChild(el('p', '', text)); }
+
+  var tcLast = '';
+  function updateTcStatus(now) {
+    var beat = 60 / S.bpm, b = Math.floor((now - tc.t0) / beat), total = tc.bars * 4, s;
+    if (b < 4) s = tc.input === 'mic' ? 'Count-in: listen, stay quiet' : 'Count-in: listen';
+    else if (b < 4 + total) s = (tc.kind === 'cal' ? 'Play along: ' : 'Play: ') + 'beat ' + (b - 3) + ' of ' + total;
+    else s = 'Listening for the last hits…';
+    if (s !== tcLast) {
+      if (s.split(':')[0] !== tcLast.split(':')[0]) announce(s.split(':')[0]);
+      tcLast = s; $('#tc-status').textContent = s;
+    }
+  }
+
+  function finishTc() {
+    var t = tc; t.done = true;
+    stop(); tc = null; tcResetUi();
+    var beatDur = 60 / S.bpm, W = Math.min(0.25, 0.45 * beatDur);
+    var play = t.beats.filter(function (b) { return b.bar >= 1 && b.bar <= t.bars; }).map(function (b) { return b.t; });
+    var raw = t.hits.map(function (h) { return h.t; });
+    if (t.kind === 'cal') { finishCal(t, play, raw, beatDur); return; }
+    var delay = null, how = '';
+    if (t.input === 'mic' && t.echo !== null) { delay = t.echo; how = 'echo'; }
+    else if (S.tc.cal[t.input]) { delay = S.tc.cal[t.input].ms / 1000; how = 'cal'; }
+    if (delay === null) {
+      var heardInCountIn = raw.some(function (x) { return x < play[0] - W; });
+      tcMessage(t.input === 'tap' ? 'Calibrate screen taps first: tap along with 8 clicks once, so the app learns your phone’s touch delay.'
+        : heardInCountIn ? 'Could not measure the phone’s delay: something other than the click was heard during the count-in. Stay quiet for the first four clicks and try again.'
+        : 'The microphone did not hear the count-in click. Use the phone speaker rather than headphones and raise the volume, or calibrate by playing along.');
+      return;
+    }
+    var g = tcGrade(play, raw.map(function (x) { return x - delay; }), beatDur);
+    if (g.matched < 4) {
+      tcMessage('Heard only ' + g.matched + ' hits near the beats.' + (t.input === 'mic' ? ' Hit harder, move the phone closer to the pad, lower the click volume, or raise the sensitivity.' : ' Tap on every beat.'));
+      return;
+    }
+    var r = { d: todayISO(), bpm: S.bpm, in: t.input, sc: g.score, mean: clamp(g.mean, -300, 300), sd: clamp(g.sd, 0, 500) };
+    S.tc.hist.push(r); if (S.tc.hist.length > 50) S.tc.hist = S.tc.hist.slice(-50); save();
+    renderTcResult(g, r, how, delay);
+    renderTcHist();
+    announce('Timing check finished: ' + g.score + ' percent');
+  }
+  function finishCal(t, play, raw, beatDur) {
+    var W = Math.min(0.3, 0.48 * beatDur), offs = [];
+    play.forEach(function (b) {
+      var best = null;
+      raw.forEach(function (x) { var dt = x - b; if (Math.abs(dt) <= W && (best === null || Math.abs(dt) < Math.abs(best))) best = dt; });
+      if (best !== null) offs.push(best);
+    });
+    if (offs.length < 6) { tcMessage('Heard ' + offs.length + ' of 8 hits. Calibration needs at least 6: play on every click and try again.'); return; }
+    var m = median(offs), mad = median(offs.map(function (o) { return Math.abs(o - m); }));
+    if (mad > 0.035) { tcMessage('The hits were too uneven to calibrate from (about ±' + Math.round(mad * 1000) + ' ms). Try again, a little slower.'); return; }
+    S.tc.cal[t.input] = { ms: Math.round(m * 1000), d: todayISO() }; save(); renderTc();
+    tcMessage('Calibrated: ' + (t.input === 'tap' ? 'your taps' : 'your hits') + ' reach the app about ' + Math.round(m * 1000) + ' ms after the click. From now on that delay is subtracted. Because this treats your average as on time, results show how steady each hit is, not whether you rush or drag overall.');
+    if (t.input === 'mic' && t.echo !== null) $('#tc-result').appendChild(el('p', 'help', 'The click was heard through the speaker, so normal runs measure the delay themselves; this calibration is only used with headphones.'));
+  }
+  function renderTcResult(g, r, how, delay) {
+    var box = $('#tc-result'); box.innerHTML = ''; box.hidden = false;
+    box.appendChild(el('h3', 'cardh', 'Result at ' + r.bpm + ' BPM'));
+    box.appendChild(el('p', 'tcscore', g.score + '%'));
+    box.appendChild(el('p', '', g.score >= TC_READY ? 'In the pocket. Ready to move up a tempo.'
+      : g.score >= TC_HOLD ? 'Solid. Stay at this tempo until you reach ' + TC_READY + '%.' : 'Not settled yet. Drop about 10 BPM and repeat.'));
+    box.appendChild(tcStrip(g));
+    var ul = el('ul', 'tccounts');
+    [['on', 'in the pocket'], ['close', 'close'], ['early', 'early'], ['late', 'late'], ['miss', 'missed']].forEach(function (k) {
+      var li = el('li'); li.appendChild(el('b', '', String(g.n[k[0]]))); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    var m = g.mean, a = Math.abs(m), rel = how === 'cal' ? ' compared with your calibration' : '';
+    box.appendChild(el('p', '', a < 8 ? 'On average you sat right on the click' + rel + ' (' + (m > 0 ? '+' : '') + m + ' ms).'
+      : m < 0 ? 'On average you were ' + a + ' ms ahead of the click' + rel + ': rushing.' : 'On average you were ' + a + ' ms behind the click' + rel + ': dragging.'));
+    box.appendChild(el('p', '', 'Your hits spread about ' + g.sd + ' ms around that average. Lower is steadier.'));
+    if (g.extra) box.appendChild(el('p', 'help', 'Extra hits not near a beat: ' + g.extra + '.'));
+    box.appendChild(el('p', 'help', 'Delay subtracted: ' + Math.round(delay * 1000) + ' ms, ' + (how === 'echo' ? 'measured from the count-in click.' : 'from your play-along calibration (' + fmtDate(S.tc.cal[r.in].d) + ').')));
+    box.appendChild(el('p', 'help', 'Score: in the pocket counts 1, close counts ½. ' + TC_READY + '% or more: move up. ' + TC_HOLD + '% or more: hold this tempo.'));
+  }
+  // 16 columns; ahead of the click plots above the centre line, behind below. Range +/-100 ms (clamped).
+  function tcStrip(g) {
+    var W = 320, H = 132, top = 16, mid = 66, k = 50 / 100, col = { on: '#8a9c63', close: '#e0b45c', early: '#c9633a', late: '#c9633a' };
+    var y = function (ms) { return mid + clamp(ms, -100, 100) * k; };
+    var s = '<svg class="tcstrip" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Hit timing for ' + g.res.length + ' beats: ' +
+      g.n.on + ' in the pocket, ' + g.n.close + ' close, ' + g.n.early + ' early, ' + g.n.late + ' late, ' + g.n.miss + ' missed">';
+    s += '<rect x="40" y="' + y(-50) + '" width="' + (W - 44) + '" height="' + (y(50) - y(-50)) + '" fill="rgba(201,153,63,.10)"/>';
+    s += '<rect x="40" y="' + y(-25) + '" width="' + (W - 44) + '" height="' + (y(25) - y(-25)) + '" fill="rgba(138,156,99,.22)"/>';
+    s += '<line x1="40" x2="' + (W - 4) + '" y1="' + mid + '" y2="' + mid + '" stroke="#7f705a" stroke-width="1"/>';
+    s += '<text x="0" y="' + (top + 4) + '" fill="#cfc3ac" font-size="11">early</text><text x="0" y="' + (mid + 4) + '" fill="#cfc3ac" font-size="11">click</text><text x="0" y="' + (H - 12) + '" fill="#cfc3ac" font-size="11">late</text>';
+    var step = (W - 64) / (g.res.length - 1); // last dot stays inside the frame
+    g.res.forEach(function (r, i) {
+      var x = (48 + i * step).toFixed(1);
+      if (r.err === null) s += '<path d="M' + (x - 4) + ' ' + (H - 20) + 'l8 8m0 -8l-8 8" stroke="#7f705a" stroke-width="2"/>';
+      else s += '<circle cx="' + x + '" cy="' + y(r.err).toFixed(1) + '" r="5" fill="' + col[r.cls] + '"/>';
+    });
+    s += '</svg>';
+    var wrap = el('div'); wrap.innerHTML = s; return wrap.firstChild;
+  }
+  function renderTcHist() {
+    var host = $('#tc-hist'); host.innerHTML = '';
+    var h = S.tc.hist.slice(-8); if (!h.length) return;
+    host.appendChild(el('h3', 'cardh', h.length === 1 ? 'Last check' : 'Last ' + h.length + ' checks'));
+    var ul = el('ul', 'histlist');
+    h.slice().reverse().forEach(function (x) {
+      ul.appendChild(el('li', '', fmtDate(x.d) + ' · ' + x.bpm + ' BPM · ' + (x.in === 'mic' ? 'mic' : 'taps') + ' · ' + x.sc + '% · ' +
+        (Math.abs(x.mean) < 8 ? 'on the click' : x.mean < 0 ? 'rushing ' + (-x.mean) + ' ms' : 'dragging ' + x.mean + ' ms') + ' · spread ' + x.sd + ' ms'));
+    });
+    host.appendChild(ul);
+  }
+  var syncTcInput = radioGroup($('#tc-input'), TC_INPUTS.map(function (k) { return { v: k, label: TC_INPUT_NAME[k] }; }),
+    function () { return S.tc.input; },
+    function (v) { if (tc) return; S.tc.input = v; save(); renderTc(); $('#tc-result').hidden = true; });
+  function renderTc() {
+    syncTcInput();
+    var inp = S.tc.input, c = S.tc.cal[inp];
+    $('#tc-mic-opts').hidden = inp !== 'mic';
+    $('#tc-sens-val').textContent = S.tc.sens;
+    $('#tc-cal-line').textContent = inp === 'mic'
+      ? 'With the phone speaker, the delay is measured on every run.' + (c ? ' Headphone calibration: ' + c.ms + ' ms (' + fmtDate(c.d) + ').' : ' With headphones, calibrate by playing along once.')
+      : c ? 'Screen-tap delay: ' + c.ms + ' ms (calibrated ' + fmtDate(c.d) + ').' : 'Screen taps need a one-time calibration: tap along with 8 clicks.';
+    if (!tc) $('#tc-go').textContent = inp === 'tap' && !c ? 'Calibrate (tap along with 8 clicks)' : 'Start timing check';
+    renderTcHist();
+  }
+  function sensStep(d) { return function () { S.tc.sens = clamp(S.tc.sens + d, 1, 5); save(); if (mic) applySens(mic.det); renderTc(); }; }
+  $('#tc-sens-dec').addEventListener('click', sensStep(-1)); $('#tc-sens-inc').addEventListener('click', sensStep(1));
+  $('#tc-open').addEventListener('click', function () { renderTc(); $('#tc-result').hidden = true; showSheet('sheet-tc'); });
+  $('#tc-go').addEventListener('click', function () {
+    if (tc) { stop(); return; }
+    tcBegin(S.tc.input === 'tap' && !S.tc.cal.tap ? 'cal' : 'run');
+  });
+  $('#tc-cal').addEventListener('click', function () { if (!tc) tcBegin('cal'); });
+
   /* ---------- first-run hint ---------- */
   if (!S.hintSeen) $('#hint').hidden = false;
   $('#hint-x').addEventListener('click', function () { $('#hint').hidden = true; S.hintSeen = true; save(); });
@@ -874,7 +1180,7 @@
   /* ---------- init ---------- */
   function applyAll() {
     renderSchedule(); renderBase(); renderToday(); renderMode();
-    setBpm(S.bpm); setSubdiv(S.subdiv); setVol(S.vol); syncSound(); setTab(S.tab); renderHist();
+    setBpm(S.bpm); setSubdiv(S.subdiv); setVol(S.vol); syncSound(); setTab(S.tab); renderHist(); renderTc();
   }
   renderRules(); applyAll(); renderGo();
 
@@ -885,7 +1191,12 @@
       setSubdiv: function (n) { setSubdiv(n); save(); },
       state: function () { return { bpm: S.bpm, subdiv: S.subdiv, curSub: curSub, pendingSub: pendingSub, tab: S.tab, running: running, taps: taps.length, beat: beatIdx, bar: barIdx, mode: S.mode.type, ctxTime: ctx ? ctx.currentTime : 0, gate: bus ? bus.gain.value : null, live: live.length }; },
       resetTaps: function () { taps = []; }, clearLog: function () { LOG.length = 0; },
-      testTap: function (ms) { testTap(ms); }, timer: T, raw: function () { return S; }
+      testTap: function (ms) { testTap(ms); }, timer: T, raw: function () { return S; },
+      tcGrade: tcGrade, makeDetector: makeDetector,
+      tcHit: function (t) { if (tc) tc.hits.push({ t: t, v: 1 }); },
+      tcOnset: function (t, v) { onOnset(t, v); },
+      micOn: function () { return !!mic; }, micGate: function () { return mic ? mic.det.cfg.gate : 0; },
+      tcState: function () { return tc ? { kind: tc.kind, input: tc.input, t0: tc.t0, beats: tc.beats.slice(), hits: tc.hits.length, echo: tc.echo, endAt: tc.endAt } : null; }
     };
   }
 })();
